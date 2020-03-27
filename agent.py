@@ -45,18 +45,25 @@ class Agent():
             if str(available_pos[i].result_board) in self.data_loaded:
                 if self.data_loaded[str(available_pos[i].result_board)] > current_qvalue:
                     current_qvalue = self.data_loaded[str(available_pos[i].result_board)]
+                    print('best curr qval = ')
+                    print(current_qvalue)
                     current_best = available_pos[i]
-            else:
-                undefined_found = True
-                undefined_moves.append(available_pos[i])
+            # else:
+            #     undefined_found = True
+            #     undefined_moves.append(available_pos[i])
 
-        if undefined_found:
-            random_value = random.randint(0, len(undefined_moves) - 1)
-            chosen_move = undefined_moves[random_value]
-        elif current_best == None:
+        exploration_rate = 0.1
+
+        # if undefined_found:
+        #     print("UNDEFINED")
+        #     random_value = random.randint(0, len(undefined_moves) - 1)
+        #     chosen_move = undefined_moves[random_value]
+        if current_best == None or random.uniform(0, 1) < exploration_rate:
+            print("EXPLORATION")
             random_value = random.randint(0, len(available_pos) - 1)
             chosen_move = available_pos[random_value]
         else:
+            print("------------------------------------BEST MOVE")
             chosen_move = current_best
 
         self.history.append(str(chosen_move.result_board))
@@ -66,25 +73,25 @@ class Agent():
     def receiveReward(self, reward):
         print('REVEIVED REWARD')
         try:
-            # values = self.data_loaded.values()
-            maxValue = 1
-            # maxValue = max(values)
+            values = self.data_loaded.values()
+            # maxValue = 1
+            maxValue = max(values)
         except:
             maxValue = reward
 
         self.data_loaded["games"] += 1
-        for i in range(0, len(self.history)):
+        for i in range(0, len(self.history)-1):
+            tmp_value = 0
             if self.history[i] in self.data_loaded:
                 tmp_value = copy.deepcopy(self.data_loaded[self.history[i]])
-                self.data_loaded[self.history[i]] = \
-                    tmp_value + \
-                    self.learning_factor * (
-                            reward + self.refresh_factor * maxValue - tmp_value)
-            else:
-                self.data_loaded[self.history[i]] = reward
+            self.data_loaded[self.history[i]] = tmp_value + (self.learning_factor * (reward + (self.refresh_factor * maxValue) - tmp_value))
+
+        self.data_loaded[self.history[-1]] = reward
 
         with open(self.filename, 'w') as outfile:
             json.dump(self.data_loaded, outfile)
+
+        self.history = []
 
     def findAvailableMoves(self, board):
         available_moves = []

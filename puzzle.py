@@ -1,4 +1,6 @@
 import random
+import sys
+import time
 from tkinter import Frame, Label, CENTER
 
 import logic
@@ -12,11 +14,7 @@ class KeySimulation():
 class GameGrid(Frame):
     def __init__(self):
         Frame.__init__(self)
-
         self.grid()
-        self.master.title('2048')
-        self.master.bind("<Key>", self.key_down)
-
         # self.gamelogic = gamelogic
         self.commands = {c.KEY_UP: logic.up, c.KEY_DOWN: logic.down,
                          c.KEY_LEFT: logic.left, c.KEY_RIGHT: logic.right,
@@ -24,18 +22,20 @@ class GameGrid(Frame):
                          c.KEY_LEFT_ALT: logic.left, c.KEY_RIGHT_ALT: logic.right,
                          c.KEY_H: logic.left, c.KEY_L: logic.right,
                          c.KEY_K: logic.up, c.KEY_J: logic.down}
-        
+
+        self.init_game()
+
+    def init_game(self):
+        self.master.title('2048')
+        self.master.bind("<Key>", self.key_down)
         self.grid_cells = []
         self.init_grid()
         self.init_matrix()
         self.update_grid_cells()
-
-        self.agent = agent.Agent(0.1, 0.2, 'filesave.json')
+        self.agent = agent.Agent(0.1, 0.9, 'filesave.json')
         # FIRST MOOVE
         move = self.agent.play(self.matrix)
         self.key_down(KeySimulation(move.key))
-
-        self.mainloop()
 
     def init_grid(self):
         background = Frame(self, bg=c.BACKGROUND_COLOR_GAME,
@@ -95,18 +95,29 @@ class GameGrid(Frame):
                 self.history_matrixs.append(self.matrix)
                 self.update_grid_cells()
                 done = False
+                time.sleep(0.01)
+                max_tile = max(max(x) for x in self.matrix)
                 if logic.game_state(self.matrix) == 'win':
                     self.grid_cells[1][1].configure(
                         text="You", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(
                         text="Win!", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-                    self.agent.receiveReward(0)
+                    self.agent.receiveReward(max_tile)
+                    self.destroy()
                 elif logic.game_state(self.matrix) == 'lose':
                     self.grid_cells[1][1].configure(
                         text="You", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(
                         text="Lose!", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-                    self.agent.receiveReward(0)
+                    if max_tile < 128:
+                        self.agent.receiveReward(-100)
+                    elif max_tile < 512:
+                        self.agent.receiveReward(-20)
+                    elif max_tile < 1024:
+                        self.agent.receiveReward(100)
+                    else:
+                        self.agent.receiveReward(1000)
+                    self.destroy()
                 else:
                     move = self.agent.play(self.matrix)
                     self.key_down(KeySimulation(move.key))
@@ -128,6 +139,11 @@ class GameGrid(Frame):
         if event.keysym == 'Left':
             return 'q'
 
+replay = True
+i = 0
+while replay:
+    gamegrid = GameGrid()
+    i += 1
+    if i == 666:
+        replay = False
 
-
-gamegrid = GameGrid()

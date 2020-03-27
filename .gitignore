@@ -3,3 +3,9 @@
 
 # python
 *.pyc
+
+.idea
+
+/img
+
+test.py
