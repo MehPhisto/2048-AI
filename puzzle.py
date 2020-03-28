@@ -3,8 +3,9 @@ import sys
 import time
 from tkinter import Frame, Label, CENTER
 
+import mctsagent
 import logic
-import agent
+import qagent
 import constants as c
 
 class KeySimulation():
@@ -32,10 +33,17 @@ class GameGrid(Frame):
         self.init_grid()
         self.init_matrix()
         self.update_grid_cells()
-        self.agent = agent.Agent(0.1, 0.9, 'filesave.json')
+        # QLearning
+        # self.agent = qagent.QAgent(0.5, 0.9, 'filesave.json')
         # FIRST MOOVE
-        move = self.agent.play(self.matrix)
-        self.key_down(KeySimulation(move.key))
+        # move = self.agent.play(self.matrix)
+        # self.key_down(KeySimulation(move.key))
+
+        # MCTS
+        self.agent = mctsagent.MCTSAgent('mcts_filesave.json')
+        # FIRST MOOVE
+        move = self.agent.selection(self.matrix)
+        self.key_down(KeySimulation(move))
 
     def init_grid(self):
         background = Frame(self, bg=c.BACKGROUND_COLOR_GAME,
@@ -68,6 +76,7 @@ class GameGrid(Frame):
         self.matrix = logic.add_two(self.matrix)
 
     def update_grid_cells(self):
+        # a = 2
         for i in range(c.GRID_LEN):
             for j in range(c.GRID_LEN):
                 new_number = self.matrix[i][j]
@@ -102,27 +111,33 @@ class GameGrid(Frame):
                         text="You", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(
                         text="Win!", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-                    self.agent.receiveReward(max_tile)
+                    # self.agent.receiveReward(logic.score(self.matrix), max_tile)
                     self.destroy()
                 elif logic.game_state(self.matrix) == 'lose':
                     self.grid_cells[1][1].configure(
                         text="You", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
                     self.grid_cells[1][2].configure(
                         text="Lose!", bg=c.BACKGROUND_COLOR_CELL_EMPTY)
-                    if max_tile < 128:
-                        self.agent.receiveReward(-100)
-                    elif max_tile < 512:
-                        self.agent.receiveReward(-20)
-                    elif max_tile < 1024:
-                        self.agent.receiveReward(100)
-                    else:
-                        self.agent.receiveReward(1000)
+                    # if max_tile < 128:
+                    #     self.agent.receiveReward(-100)
+                    # elif max_tile < 512:
+                    #     self.agent.receiveReward(-20)
+                    # elif max_tile < 1024:
+                    #     self.agent.receiveReward(100)
+                    # else:
+                    #     self.agent.receiveReward(1000)
+                    # self.agent.receiveReward(logic.score(self.matrix), max_tile)
                     self.destroy()
                 else:
-                    move = self.agent.play(self.matrix)
-                    self.key_down(KeySimulation(move.key))
+                    ## QL
+                    # move = self.agent.play(self.matrix)
+                    # self.key_down(KeySimulation(move.key))
+                    # MCTS
+                    move = self.agent.selection(self.matrix)
+                    self.key_down(KeySimulation(move))
 
     def generate_next(self):
+        print('generate next')
         index = (self.gen(), self.gen())
         while self.matrix[index[0]][index[1]] != 0:
             index = (self.gen(), self.gen())
@@ -144,6 +159,6 @@ i = 0
 while replay:
     gamegrid = GameGrid()
     i += 1
-    if i == 666:
+    if i == 1:
         replay = False
 
